@@ -1,0 +1,66 @@
+# Build artifacts
+build/
+build-*/
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+CMakeUserPresets.json
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.vs/
+.ccls-cache/
+compile_flags.txt
+
+# Dependencies / External
+*.a
+*.so
+*.dylib
+*.dll
+/conan/
+vcpkg/
+
+# Test outputs
+test_results/
+*.log
+*.xml
+
+# Performance / Profiling
+*.perf
+*.prof
+*.gcda
+*.gcno
+gmon.out
+
+# Low-latency specific
+*.csv
+*.jsonl
+market_data_dump.*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Do not ignore the build directory entirely if it contains useful presets,
+# but typically we regenerate it.
+!build/CMakePresets.json
+!build/*/CMakeCache.txt  # rare

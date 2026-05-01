@@ -1,0 +1,141 @@
+# Low Latency Prediction Market Engine
+
+A high-performance C++20 execution engine designed for low-latency prediction market trading, order matching, and real-time market data processing. Optimized for sub-microsecond critical paths using native compilation, SIMD JSON parsing, and Boost.Asio networking.
+
+**Current Status**: Foundational infrastructure (CMake + core dependencies). Ready for extension with matching engine, risk systems, and venue adapters.
+
+## Features
+
+- **C++20** with strict compiler enforcement (`-Wall -Wextra -Wpedantic -Werror`)
+- **Performance**: Release builds use `-O3 -march=native` for maximum speed on target hardware
+- **Zero-copy JSON**: [simdjson](https://github.com/simdjson/simdjson) for ultra-fast market data ingestion
+- **Networking & Concurrency**: Boost.System + Boost.Thread (extendable to Boost.Asio)
+- **Testing**: GoogleTest integration with CMake FetchContent
+- **Build System**: Modern CMake 3.20+ with FetchContent for dependencies
+
+## Quick Start
+
+### Prerequisites
+
+- CMake ≥ 3.20
+- C++20 compiler (GCC 11+, Clang 13+, MSVC 2019+)
+- Boost (system + thread components) — install via:
+  ```bash
+  # macOS
+  brew install boost
+  # Ubuntu
+  sudo apt install libboost-system-dev libboost-thread-dev
+  ```
+- Git
+
+### Build & Run
+
+```bash
+# Clone and configure
+git clone <your-repo-url>
+cd low-latency-prediction-market-engine
+
+# Clean previous build (important after dependency/search-path changes)
+rm -rf build
+
+# Configure (uses FetchContent for simdjson + GoogleTest)
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+# Build (engine + tests)
+cmake --build build -j$(getconf _NPROCESSORS_ONLN)
+
+# Run the engine
+./build/engine
+
+# Run tests
+ctest --test-dir build -V
+```
+
+**Note for macOS users in conda `(base)`**: conda often injects search paths that can cause a mixed Boost install to be detected (e.g., Homebrew BoostConfig + conda `boost_system`). The build defaults to ignoring `CONDA_PREFIX` during dependency discovery; override with:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLLPME_IGNORE_CONDA_PREFIX=OFF
+```
+
+**Expected output** (from `./build/engine`) includes the startup banner confirming optimizations and readiness.
+
+## Project Structure
+
+```
+.
+├── CMakeLists.txt          # Root build configuration (strict flags, deps)
+├── include/                # Public API headers (orderbook, engine interfaces)
+├── src/
+│   └── main.cpp            # Entry point
+├── tests/
+│   └── test_main.cpp       # GoogleTest suite
+├── .gitignore
+├── README.md
+└── build/                  # Generated (ignored)
+```
+
+## Development
+
+### Adding Components
+
+1. Place headers in `include/`
+2. Implementation in `src/`
+3. Tests in `tests/`
+4. Update `CMakeLists.txt` targets as modules grow (consider `add_library` for core engine)
+
+### Testing
+
+```bash
+# After building (see Build & Run)
+ctest --test-dir build -V
+```
+
+### Performance Tuning
+
+- Profile with `perf`, Valgrind, or Tracy
+- Ensure `-march=native` matches production hardware
+- Monitor cache misses and branch prediction in hot paths (order matching, risk checks)
+
+## Dependencies (Managed by CMake)
+
+- **simdjson** (v3.6.3): Zero-allocation JSON parsing
+- **GoogleTest** (v1.15.2): Unit testing
+- **Boost**: System + Thread (local install required; extend with Asio, Beast, etc.)
+
+## GitHub Setup
+
+This repository includes:
+
+- Comprehensive `.gitignore` for C++/CMake/IDE artifacts
+- GitHub Actions CI (see `.github/workflows/ci.yml` — add for automated builds/tests across platforms)
+- Modern CMake with dependency management and macOS/conda-friendly Boost discovery
+
+### CI/CD Recommendations
+
+- Add GitHub Actions workflow for:
+  - Linux (Ubuntu) + macOS matrix
+  - Release builds with sanitizers (`-fsanitize=address,undefined`)
+  - Benchmarking and performance regression tests
+- Use `clang-tidy` and `include-what-you-use` for static analysis
+- Consider `conan` or `vcpkg` for full dependency management in larger projects
+
+## Roadmap
+
+- [ ] Order book implementation with lock-free data structures
+- [ ] Real-time market data adapter (WebSocket + simdjson)
+- [ ] Matching engine with low-latency priority queues
+- [ ] Risk management and position tracking
+- [ ] Benchmark suite (latency histograms, throughput)
+- [ ] Python bindings (via pybind11) for research
+
+## License
+
+MIT License — see `LICENSE` file (add as needed).
+
+## Contributing
+
+Pull requests welcome. Focus on measurable latency improvements, thread safety, and test coverage.
+
+---
+
+_Built for high-frequency prediction market execution. Questions? Open an issue._
