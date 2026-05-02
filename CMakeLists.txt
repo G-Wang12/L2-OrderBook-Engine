@@ -120,9 +120,13 @@ if(NOT Boost_FOUND)
     message(FATAL_ERROR "Boost not found. Please install Boost with system and thread components.")
 endif()
 
+# OpenSSL is required for wss:// (TLS) via boost::asio::ssl + boost::beast::ssl_stream
+find_package(OpenSSL REQUIRED)
+
 # Main executable
 add_executable(engine
     src/main.cpp
+    src/websocket_client.cpp
 )
 
 target_compile_features(engine PRIVATE cxx_std_20)
@@ -135,6 +139,8 @@ target_include_directories(engine
 target_link_libraries(engine
     PRIVATE
         simdjson
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 llpme_target_link_boost(engine)

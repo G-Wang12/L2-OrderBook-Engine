@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 
+#include "order_book.hpp"
+
 int main()
 {
     std::cout << "=========================================" << std::endl;
