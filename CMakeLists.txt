@@ -127,6 +127,7 @@ find_package(OpenSSL REQUIRED)
 add_executable(engine
     src/main.cpp
     src/websocket_client.cpp
+    src/strategy_engine.cpp
 )
 
 target_compile_features(engine PRIVATE cxx_std_20)
