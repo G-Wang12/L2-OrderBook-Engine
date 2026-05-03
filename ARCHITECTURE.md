@@ -86,6 +86,7 @@ Note: real venue payload schemas will likely differ. If your feed doesn’t matc
 Responsibilities:
 
 - async resolve → TCP connect → TLS handshake → websocket handshake
+- after websocket handshake, send a **subscription** message via `async_write()`
 - continuous `async_read()` loop
 - read payload into a fixed-capacity Beast `flat_static_buffer<4096>`
 - parse using `MarketParser`; on success, `queue.push(tick)`
@@ -93,9 +94,25 @@ Responsibilities:
 
 Current limitations:
 
-- no auth/subscription message is sent after handshake
+- subscription payload is currently a **static placeholder** JSON string (real venues require venue-specific subscribe + often auth)
 - no ping/pong or reconnect/backoff logic
 - message size is capped by the static read buffer
+
+#### Subscription Handshake (Outbound Write)
+
+Many real exchanges (including prediction markets) will not send any market data until the client explicitly subscribes.
+
+Current behavior:
+
+- after `ws_.async_handshake(...)` completes, `WebSocketClient` calls `do_subscribe()`
+- `do_subscribe()` sends a JSON subscription payload using `ws_.async_write()`
+- the ingestion loop (`do_read()`) only begins after the write completes successfully
+
+Implementation note:
+
+- the subscription payload buffer is kept alive across the async write by capturing an owning `std::shared_ptr<std::string>` in the completion handler
+
+This is intentionally minimal scaffolding so the next step can be replacing the placeholder JSON with Polymarket's real subscribe/auth schema.
 
 ### Strategy Engine
 

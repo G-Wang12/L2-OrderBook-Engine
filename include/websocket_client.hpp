@@ -40,6 +40,7 @@ private:
     void on_connect(boost::beast::error_code ec, const tcp::resolver::results_type::endpoint_type &);
     void on_ssl_handshake(boost::beast::error_code ec);
     void on_ws_handshake(boost::beast::error_code ec);
+    void do_subscribe();
     void do_read();
     void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
     void on_close(boost::beast::error_code ec);

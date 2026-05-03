@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <memory>
 #include <string_view>
 
 #include <boost/asio/buffer.hpp>
@@ -113,7 +114,32 @@ void WebSocketClient::on_ws_handshake(boost::beast::error_code ec)
         return;
     }
 
-    do_read();
+    do_subscribe();
+}
+
+void WebSocketClient::do_subscribe()
+{
+    // Placeholder: most real venues require an explicit subscription message
+    // before they will begin sending market data.
+    static constexpr std::string_view kSubscriptionPayload =
+        R"({"assets":["0x0000000000000000000000000000000000000000"],"type":"market"})";
+
+    auto payload = std::make_shared<std::string>(kSubscriptionPayload);
+
+    // JSON is sent as a text websocket message.
+    ws_.text(true);
+
+    ws_.async_write(boost::asio::buffer(*payload),
+                    [this, payload](boost::beast::error_code ec, std::size_t)
+                    {
+                        if (ec)
+                        {
+                            fail("subscribe_write", ec);
+                            return;
+                        }
+
+                        do_read();
+                    });
 }
 
 void WebSocketClient::do_read()
