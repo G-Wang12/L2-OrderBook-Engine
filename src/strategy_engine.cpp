@@ -34,7 +34,7 @@ void StrategyEngine::run()
         const std::uint8_t best_bid = book_.get_best_bid();
         const std::uint8_t best_ask = book_.get_best_ask();
 
-        if (best_bid == 0U || best_ask == 0U)
+        if (best_bid == LimitOrderBook::kNoBid || best_ask == LimitOrderBook::kNoAsk)
         {
             continue;
         }

@@ -58,3 +58,26 @@ TEST(MarketParserTest, ParsesBidAndAsk)
     EXPECT_EQ(tick.size, 500U);
     EXPECT_FALSE(tick.is_bid);
 }
+
+TEST(LimitOrderBookTest, BestBidAskHandleDeletionAndEmpty)
+{
+    LimitOrderBook book;
+
+    EXPECT_EQ(book.get_best_bid(), LimitOrderBook::kNoBid);
+    EXPECT_EQ(book.get_best_ask(), LimitOrderBook::kNoAsk);
+
+    // Add two bid levels; best should be the higher price.
+    book.apply_tick(MarketTick{static_cast<std::uint8_t>(57), 100U, true});
+    book.apply_tick(MarketTick{static_cast<std::uint8_t>(58), 200U, true});
+    EXPECT_EQ(book.get_best_bid(), static_cast<std::uint8_t>(58));
+
+    // Wipe out the best bid with size=0; best should fall back.
+    book.apply_tick(MarketTick{static_cast<std::uint8_t>(58), 0U, true});
+    EXPECT_EQ(book.get_best_bid(), static_cast<std::uint8_t>(57));
+
+    // Add an ask level then wipe it; ask should return the empty sentinel.
+    book.apply_tick(MarketTick{static_cast<std::uint8_t>(59), 123U, false});
+    EXPECT_EQ(book.get_best_ask(), static_cast<std::uint8_t>(59));
+    book.apply_tick(MarketTick{static_cast<std::uint8_t>(59), 0U, false});
+    EXPECT_EQ(book.get_best_ask(), LimitOrderBook::kNoAsk);
+}

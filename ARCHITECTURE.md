@@ -41,8 +41,13 @@ Two threads, one unidirectional pipeline:
 Operations:
 
 - `apply_tick(tick)`: O(1) update `bids_[price] = size` or `asks_[price] = size`
-- `get_best_bid()`: scan 99→1
-- `get_best_ask()`: scan 1→99
+- `get_best_bid()`: scan 99→1 and return the highest level with `size > 0` (returns `0` when the bid side is empty)
+- `get_best_ask()`: scan 1→99 and return the lowest level with `size > 0` (returns `100` when the ask side is empty)
+
+Deletion semantics (L2 feeds):
+
+- exchanges commonly send `size == 0` to indicate a price level was deleted (filled/canceled)
+- this is represented as a `MarketTick` update that sets that level’s stored size to `0`, so subsequent best-price scans naturally skip it
 
 This is intentionally simple because prediction-market prices are discretized into a tiny fixed range.
 

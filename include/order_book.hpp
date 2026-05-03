@@ -17,6 +17,10 @@ public:
     static constexpr std::uint8_t kMaxPrice = 99;
     static constexpr std::size_t kLevels = 100; // index 0 unused
 
+    // Sentinel values for empty sides.
+    static constexpr std::uint8_t kNoBid = 0;
+    static constexpr std::uint8_t kNoAsk = 100;
+
     constexpr LimitOrderBook() noexcept = default;
 
     constexpr void apply_tick(const MarketTick &tick) noexcept
@@ -47,7 +51,7 @@ public:
                 return static_cast<std::uint8_t>(p);
             }
         }
-        return 0;
+        return kNoBid;
     }
 
     [[nodiscard]] constexpr std::uint8_t get_best_ask() const noexcept
@@ -60,7 +64,7 @@ public:
                 return static_cast<std::uint8_t>(p);
             }
         }
-        return 0;
+        return kNoAsk;
     }
 
 private:
