@@ -257,6 +257,13 @@ async def main() -> None:
                 print(f"connection ended; recorded messages={stats.messages} bytes={stats.bytes} ({mb:.2f} MiB)")
         except Exception as exc:
             print(f"connection error: {type(exc).__name__}: {exc}")
+            if isinstance(exc, ssl.SSLCertVerificationError):
+                print(
+                    "TLS verification failed. Common fixes:\n"
+                    "- Ensure venv has `certifi` installed: `python -m pip install -U certifi`\n"
+                    "- If behind a corporate proxy/MITM, set `POLYMARKET_CA_BUNDLE=/path/to/ca-bundle.pem`\n"
+                    "- Last resort (insecure): set `POLYMARKET_INSECURE_SKIP_VERIFY=1`\n"
+                )
 
         if stop.is_set():
             break
