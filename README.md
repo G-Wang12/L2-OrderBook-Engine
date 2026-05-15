@@ -1,8 +1,10 @@
-# Low Latency Prediction Market Engine
+# L2 OrderBook High-Frequency Execution Engine
 
-A C++20 low-latency **market-data → strategy** skeleton for prediction-market style L2 feeds. It ingests websocket messages, normalizes them into a tiny fixed representation, runs one or more alpha signals in a tight loop, and logs a mock trading stream to CSV.
+A C++20, low-latency **market-data → strategy** engine skeleton built around the core HFT loop: ingest L2 updates over WSS, normalize them into a small internal representation, hand off across threads via a lock-free SPSC queue, and run a busy-wait strategy loop with microsecond-level latency visibility.
 
-**Current Status**: Working end-to-end skeleton (local replay/mock tooling included). Not a production execution engine (no real venue auth/subscribe, reconnect/ping-pong, order management, or risk).
+The strategy layer is intentionally modular: you can run a single alpha signal or an ensemble of multiple signals in the same process (selected at startup), combine their confidence scores, and emit mock fills/PnL to CSV for rapid iteration.
+
+**Current Status**: Working end-to-end pipeline (local replay/mock tooling included) with a pluggable strategy/alpha framework. Not a production execution system yet (no real venue auth/subscribe, reconnect/ping-pong, OMS, or risk).
 
 ## Features
 
