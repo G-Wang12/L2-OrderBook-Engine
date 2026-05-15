@@ -1,6 +1,6 @@
 # Engine Architecture (Current Skeleton)
 
-This repo is currently a minimal, low-latency **market-data → strategy** skeleton. It builds and runs, and the core components are wired end-to-end, but it is **not yet a complete production Polymarket/Kalshi execution engine** (no auth/subscribe, no order management, no risk, no reconnect logic).
+This repo is currently a minimal, low-latency **market-data → strategy** skeleton. It builds and runs, and the core components are wired end-to-end, but it is **not yet a complete production Polymarket/Kalshi execution engine** (no real venue auth/subscribe, no order management, no risk, no reconnect logic).
 
 The design goal is to keep hot paths predictable:
 
@@ -174,8 +174,8 @@ Microprice momentum signal (implemented by `MomentumAlpha`):
 
 - microprice (in cents):
   - `microprice = (best_bid * best_ask_size + best_ask * best_bid_size) / (best_bid_size + best_ask_size)`
-- if `microprice - prev_microprice > 1.0` (momentum up): BUY 10 at best ask
-- if `prev_microprice - microprice > 1.0` (momentum down): SELL 10 at best bid
+- `MomentumAlpha` maps a per-tick microprice jump of > 1 cent to confidence `+1.0`, < -1 cent to `-1.0`, else `0.0`
+- `StrategyEngine` executes when the _combined_ confidence (average across enabled alphas) exceeds a threshold
 
 Logging/PnL:
 

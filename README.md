@@ -1,15 +1,16 @@
 # Low Latency Prediction Market Engine
 
-A high-performance C++20 execution engine designed for low-latency prediction market trading, order matching, and real-time market data processing. Optimized for sub-microsecond critical paths using native compilation, SIMD JSON parsing, and Boost.Asio networking.
+A C++20 low-latency **market-data → strategy** skeleton for prediction-market style L2 feeds. It ingests websocket messages, normalizes them into a tiny fixed representation, runs one or more alpha signals in a tight loop, and logs a mock trading stream to CSV.
 
-**Current Status**: Foundational infrastructure (CMake + core dependencies). Ready for extension with matching engine, risk systems, and venue adapters.
+**Current Status**: Working end-to-end skeleton (local replay/mock tooling included). Not a production execution engine (no real venue auth/subscribe, reconnect/ping-pong, order management, or risk).
 
 ## Features
 
 - **C++20** with strict compiler enforcement (`-Wall -Wextra -Wpedantic -Werror`)
 - **Performance**: Release builds use `-O3 -march=native` for maximum speed on target hardware
-- **Zero-copy JSON**: [simdjson](https://github.com/simdjson/simdjson) for ultra-fast market data ingestion
-- **Networking & Concurrency**: Boost.System + Boost.Thread (extendable to Boost.Asio)
+- **SIMD JSON parsing**: [simdjson](https://github.com/simdjson/simdjson) on-demand parsing with a fixed-capacity buffer (no per-message allocations; one memcpy into a padded buffer)
+- **Networking (WSS)**: Boost.Asio + Boost.Beast over OpenSSL (TLS)
+- **Concurrency**: dedicated network thread + dedicated strategy thread, coordinated via a lock-free SPSC queue
 - **Testing**: GoogleTest integration with CMake FetchContent
 - **Build System**: Modern CMake 3.20+ with FetchContent for dependencies
 - **Modular Signals (Alphas)**: Strategy runs one or more pluggable alpha signals and combines their confidence scores
@@ -27,6 +28,13 @@ A high-performance C++20 execution engine designed for low-latency prediction ma
   brew install boost
   # Ubuntu
   sudo apt install libboost-system-dev libboost-thread-dev
+  ```
+- OpenSSL (TLS) — install via:
+  ```bash
+  # macOS
+  brew install openssl@3
+  # Ubuntu
+  sudo apt install libssl-dev
   ```
 - Git
 
@@ -47,7 +55,8 @@ cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(getconf _NPROCESSORS_ONLN)
 
 # Run the engine
-./build/engine
+# Note: running with no args defaults to example.com:443 and uses a placeholder subscribe payload,
+# so for a deterministic local run you usually want the mock or replay server below.
 
 # Select which strategy signals (alphas) to run (default is both)
 ./build/engine --strategy momentum
@@ -56,6 +65,29 @@ cmake --build build -j$(getconf _NPROCESSORS_ONLN)
 
 # Run tests
 ctest --test-dir build -V
+```
+
+#### Deterministic local run (recommended)
+
+1. Generate a local TLS cert/key (used by the Python WSS servers):
+
+```bash
+./tools/gen_self_signed_cert.sh
+```
+
+2. In one terminal, start a local websocket server:
+
+```bash
+source .venv/bin/activate
+python tools/mock_wss_server.py
+# or
+python tools/replay_server.py
+```
+
+3. In another terminal, point the engine at it:
+
+```bash
+./build/engine --strategy both 127.0.0.1 8765 /
 ```
 
 ### Recommended Environment Setup (Conda + Python tooling)
@@ -216,7 +248,7 @@ PY
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLLPME_IGNORE_CONDA_PREFIX=OFF
 ```
 
-**Expected output** (from `./build/engine`) includes the startup banner confirming optimizations and readiness.
+**Expected output**: the engine is mostly quiet when healthy. You should see `trading_log.csv` being written and the dashboard updating; on Ctrl+C you should see `Shutdown complete.`
 
 ## Project Structure
 
@@ -225,7 +257,9 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLLPME_IGNORE_CONDA_PREFIX=OFF
 ├── CMakeLists.txt          # Root build configuration (strict flags, deps)
 ├── include/                # Public API headers (orderbook, engine interfaces)
 ├── src/
-│   └── main.cpp            # Entry point
+│   ├── main.cpp            # Entry point / wiring / shutdown
+│   ├── strategy_engine.cpp # Strategy thread loop
+│   └── websocket_client.cpp # Boost.Beast WSS client
 ├── tests/
 │   └── test_main.cpp       # GoogleTest suite
 ├── tools/
@@ -264,14 +298,15 @@ ctest --test-dir build -V
 
 - **simdjson** (v3.6.3): Zero-allocation JSON parsing
 - **GoogleTest** (v1.15.2): Unit testing
-- **Boost**: System + Thread (local install required; extend with Asio, Beast, etc.)
+- **Boost**: system + thread (required)
+- **OpenSSL**: TLS for `wss://`
 
 ## GitHub Setup
 
 This repository includes:
 
 - Comprehensive `.gitignore` for C++/CMake/IDE artifacts
-- GitHub Actions CI (see `.github/workflows/ci.yml` — add for automated builds/tests across platforms)
+- GitHub Actions CI (see `.github/workflows/ci.yml`) for automated builds/tests across platforms
 - Modern CMake with dependency management and macOS/conda-friendly Boost discovery
 
 ### CI/CD Recommendations
@@ -285,8 +320,9 @@ This repository includes:
 
 ## Roadmap
 
-- [ ] Order book implementation with lock-free data structures
-- [ ] Real-time market data adapter (WebSocket + simdjson)
+- [ ] More realistic order book model (multi-asset routing, sequencing/consistency checks)
+- [ ] Venue-specific subscribe/auth + TLS verification policy
+- [ ] Reconnect/backoff and ping/pong in the C++ websocket client
 - [ ] Matching engine with low-latency priority queues
 - [ ] Risk management and position tracking
 - [ ] Benchmark suite (latency histograms, throughput)

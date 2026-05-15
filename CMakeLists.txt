@@ -31,6 +31,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Strict compiler warnings + Release optimizations (apply to OUR targets only).
+
+# Some warning-group names vary across Clang/AppleClang versions.
+# Since we compile with -Werror, passing an unknown -Wno-*/-W*-error=... option
+# can itself fail the build. Probe support before adding such flags.
+include(CheckCXXCompilerFlag)
+
+check_cxx_compiler_flag("-Wno-error=deprecated-literal-operator" LLPME_HAS_WNO_ERROR_DEPRECATED_LITERAL_OPERATOR)
+check_cxx_compiler_flag("-Wno-deprecated-literal-operator" LLPME_HAS_WNO_DEPRECATED_LITERAL_OPERATOR)
+
 function(llpme_target_strict_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /WX)
@@ -40,7 +49,11 @@ function(llpme_target_strict_warnings target)
         # breaks under -Werror (e.g. simdjson's deprecated literal-operator form).
         # Keep -Werror for our code, but don't hard-fail on these external-header diagnostics.
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            target_compile_options(${target} PRIVATE -Wno-error=deprecated-literal-operator)
+            if(LLPME_HAS_WNO_ERROR_DEPRECATED_LITERAL_OPERATOR)
+                target_compile_options(${target} PRIVATE -Wno-error=deprecated-literal-operator)
+            elseif(LLPME_HAS_WNO_DEPRECATED_LITERAL_OPERATOR)
+                target_compile_options(${target} PRIVATE -Wno-deprecated-literal-operator)
+            endif()
         endif()
     endif()
 endfunction()
